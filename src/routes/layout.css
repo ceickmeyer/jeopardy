@@ -1,5 +1,33 @@
 @import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap');
+
+@font-face {
+	font-family: 'Korinna';
+	src: url('/fonts/ITC Korinna Regular.otf') format('opentype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Korinna';
+	src: url('/fonts/Korinna Italic.ttf') format('truetype');
+	font-weight: 400;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: 'Korinna';
+	src: url('/fonts/ITC Korinna Bold.otf') format('opentype');
+	font-weight: 700;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Korinna';
+	src: url('/fonts/ITC Korinna Std Heavy.otf') format('opentype');
+	font-weight: 900;
+	font-style: normal;
+}
 
 *,
 *::before,
@@ -10,18 +38,20 @@
 }
 
 :root {
-	--blue: #060ce9;
+	--blue: #140b88;
 	--blue-dark: #04088a;
 	--blue-header: #060686;
 	--blue-done: #03037a;
 	--gold: #ffcc00;
 	--border: #2626d4;
+	--font-board: 'Barlow Condensed', 'Arial Narrow', Helvetica, sans-serif;
+	--font-clue: 'Korinna', 'ITC Korinna', serif;
 }
 
 html,
 body {
 	background-color: var(--blue);
 	color: white;
-	font-family: 'Oswald', Impact, 'Arial Narrow', sans-serif;
+	font-family: var(--font-board);
 	min-height: 100vh;
 }

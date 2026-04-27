@@ -126,7 +126,7 @@
 		padding: 1.1rem;
 		background: var(--gold);
 		color: #000;
-		font-family: 'Oswald', Impact, sans-serif;
+		font-family: 'Korinna', 'ITC Korinna', serif;
 		font-size: 1.4rem;
 		font-weight: 700;
 		letter-spacing: 3px;

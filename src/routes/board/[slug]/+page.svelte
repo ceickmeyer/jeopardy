@@ -65,7 +65,7 @@
 <div
 	class="board"
 	style:grid-template-columns="repeat({board.categories.length}, 1fr)"
-	style:grid-template-rows="auto repeat({values.length}, 1fr)"
+	style:grid-template-rows="repeat({values.length + 1}, 1fr)"
 >
 	{#each board.categories as cat}
 		<div class="cat-header">
@@ -101,7 +101,7 @@
 
 {#if activeQuestion}
 	<button class="overlay" onclick={advance} aria-label={modalStage === 'question' ? 'Reveal answer' : 'Close'}>
-		<div class="modal">
+		<div class="modal" class:showing-answer={modalStage === 'answer'}>
 			<p class="modal-category">{activeCatName}</p>
 			<p class="modal-value">${activeQuestion.value}</p>
 
@@ -135,7 +135,8 @@
 		justify-content: center;
 		text-align: center;
 		padding: 0.6rem 0.4rem;
-		font-size: clamp(0.6rem, 1.3vw, 1rem);
+		font-family: var(--font-board);
+		font-size: clamp(1rem, min(2.5vw, 4.5vh), 3rem);
 		font-weight: 700;
 		text-transform: uppercase;
 		color: white;
@@ -167,11 +168,12 @@
 	}
 
 	.amount {
-		font-size: clamp(1.2rem, 3.5vw, 4rem);
+		font-family: var(--font-board);
+		font-size: clamp(2rem, min(6vw, 10vh), 9rem);
 		color: var(--gold);
 		font-weight: 700;
 		text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);
-		letter-spacing: 1px;
+		letter-spacing: 2px;
 		user-select: none;
 	}
 
@@ -191,40 +193,51 @@
 		justify-content: center;
 		z-index: 100;
 		cursor: pointer;
-		padding: 3rem 2rem;
+		padding: 2rem;
 	}
 
 	.modal {
 		text-align: center;
 		max-width: 1100px;
+		max-height: calc(100vh - 4rem);
 		width: 100%;
+		overflow: hidden;
 		pointer-events: none;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 0.25rem;
 	}
 
 	.modal-category {
-		font-size: clamp(0.85rem, 1.8vw, 1.3rem);
+		font-family: var(--font-board);
+		font-size: clamp(0.75rem, min(1.8vw, 2.5vh), 1.3rem);
 		color: white;
 		text-transform: uppercase;
 		letter-spacing: 4px;
 		opacity: 0.7;
 		text-shadow: 1px 1px 3px #000;
+		flex-shrink: 0;
 	}
 
 	.modal-value {
-		font-size: clamp(1.2rem, 2.5vw, 2rem);
+		font-family: var(--font-board);
+		font-size: clamp(1rem, min(2.5vw, 3.5vh), 2rem);
 		color: var(--gold);
 		font-weight: 700;
 		letter-spacing: 2px;
 		text-shadow: 2px 2px 0 #000;
-		margin-bottom: 1rem;
+		margin-bottom: 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.showing-answer .modal-value {
+		margin-bottom: 0.15rem;
 	}
 
 	.modal-clue {
-		font-size: clamp(2rem, 5vw, 5.5rem);
+		font-family: var(--font-clue);
+		font-size: clamp(1.5rem, min(5vw, 10vh), 5.5rem);
 		line-height: 1.2;
 		color: white;
 		text-transform: uppercase;
@@ -235,15 +248,23 @@
 		font-weight: 700;
 	}
 
+	/* Shrink the question when the answer is also on screen */
+	.showing-answer .modal-clue {
+		font-size: clamp(1rem, min(2.5vw, 4.5vh), 2.5rem);
+		opacity: 0.65;
+	}
+
 	.divider {
 		width: 50%;
 		border: none;
 		border-top: 3px solid rgba(255, 255, 255, 0.35);
-		margin: 1.25rem 0 0.75rem;
+		margin: 0.5rem 0 0.25rem;
+		flex-shrink: 0;
 	}
 
 	.modal-answer {
-		font-size: clamp(2rem, 5vw, 5.5rem);
+		font-family: var(--font-clue);
+		font-size: clamp(1.5rem, min(5vw, 10vh), 5.5rem);
 		line-height: 1.2;
 		color: var(--gold);
 		text-transform: uppercase;
@@ -255,10 +276,11 @@
 	}
 
 	.modal-hint {
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		color: rgba(255, 255, 255, 0.25);
 		text-transform: uppercase;
 		letter-spacing: 3px;
-		margin-top: 2rem;
+		margin-top: 0.75rem;
+		flex-shrink: 0;
 	}
 </style>

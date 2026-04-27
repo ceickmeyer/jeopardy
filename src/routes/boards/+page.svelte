@@ -195,7 +195,7 @@
 		background: transparent;
 		color: rgba(255, 255, 255, 0.4);
 		border: 2px solid rgba(255, 255, 255, 0.2);
-		font-family: 'Oswald', Impact, sans-serif;
+		font-family: 'Korinna', 'ITC Korinna', serif;
 		font-weight: 700;
 		padding: 0.5rem 1rem;
 		text-transform: uppercase;
