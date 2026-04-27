@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap');
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+:root {
+	--blue: #060ce9;
+	--blue-dark: #04088a;
+	--blue-header: #060686;
+	--blue-done: #03037a;
+	--gold: #ffcc00;
+	--border: #2626d4;
+}
+
+html,
+body {
+	background-color: var(--blue);
+	color: white;
+	font-family: 'Oswald', Impact, 'Arial Narrow', sans-serif;
+	min-height: 100vh;
+}
