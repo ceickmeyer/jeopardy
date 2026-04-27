@@ -35,6 +35,7 @@
 					</div>
 					<div class="board-actions">
 						<a href="/board/{board.slug}" class="btn-play">Play</a>
+						<a href="/board/{board.slug}?dd=1" class="btn-play btn-dd">Play with Daily Doubles</a>
 						<form
 							method="POST"
 							action="?/delete"
@@ -171,8 +172,10 @@
 
 	.board-actions {
 		display: flex;
-		gap: 0.75rem;
+		flex-direction: column;
+		gap: 0.4rem;
 		flex-shrink: 0;
+		align-items: stretch;
 	}
 
 	.btn-play {
@@ -180,15 +183,27 @@
 		color: #000;
 		text-decoration: none;
 		font-weight: 700;
-		padding: 0.5rem 1.5rem;
+		padding: 0.5rem 1.25rem;
 		text-transform: uppercase;
 		letter-spacing: 2px;
 		font-size: 0.875rem;
 		transition: background 0.15s;
+		text-align: center;
 	}
 
 	.btn-play:hover {
 		background: #ffaa00;
+	}
+
+	.btn-dd {
+		background: transparent;
+		color: var(--gold);
+		border: 2px solid var(--gold);
+		font-size: 0.75rem;
+	}
+
+	.btn-dd:hover {
+		background: rgba(255, 204, 0, 0.1);
 	}
 
 	.btn-delete {

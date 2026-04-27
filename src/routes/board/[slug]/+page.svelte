@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { JeopardyQuestion } from '$lib/types';
+	import type { JeopardyBoard, JeopardyQuestion } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
 	const board = $derived(data.board);
@@ -11,12 +11,71 @@
 		)
 	);
 
+	// --- Sounds ---
+	function play(src: string) {
+		new Audio(src).play().catch(() => {});
+	}
+
+	$effect(() => {
+		play('/sounds/jeopardy-board-fill-sound.mp3');
+	});
+
+	// --- Daily Doubles ---
+	function generateDailyDoubles(b: JeopardyBoard, vals: number[]): Set<string> {
+		const N = vals.length;
+		const peak = Math.max(0, N - 2);
+		const weights = vals.map((_, i) => Math.exp(-0.7 * (i - peak) ** 2));
+
+		const result = new Set<string>();
+		const usedCols = new Set<number>();
+
+		for (let n = 0; n < 2; n++) {
+			const availableCols = b.categories
+				.map((_, i) => i)
+				.filter((i) => !usedCols.has(i))
+				.sort(() => Math.random() - 0.5);
+
+			for (const col of availableCols) {
+				const total = weights.reduce((a, w) => a + w, 0);
+				let rand = Math.random() * total;
+				let rowIdx = N - 1;
+				for (let i = 0; i < N; i++) {
+					rand -= weights[i];
+					if (rand <= 0) {
+						rowIdx = i;
+						break;
+					}
+				}
+				const value = vals[rowIdx];
+				if (b.categories[col].questions.some((q) => q.value === value)) {
+					result.add(`${col}-${value}`);
+					usedCols.add(col);
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	const dailyDoublesEnabled = $derived(data.dailyDoubles);
+	let dailyDoubleKeys = $state<Set<string>>(new Set());
+
+	$effect(() => {
+		if (dailyDoublesEnabled) {
+			dailyDoubleKeys = generateDailyDoubles(board, values);
+		} else {
+			dailyDoubleKeys = new Set();
+		}
+	});
+
+	// --- Game state ---
 	let cellStates = $state<Record<string, 'done'>>({});
 
 	let activeQuestion = $state<JeopardyQuestion | null>(null);
 	let activeCatName = $state('');
 	let activeCellKey = $state('');
-	let modalStage = $state<'question' | 'answer'>('question');
+	let modalStage = $state<'daily_double' | 'question' | 'answer'>('question');
 
 	function openCell(catIdx: number, value: number) {
 		const key = `${catIdx}-${value}`;
@@ -29,12 +88,21 @@
 		activeQuestion = question;
 		activeCatName = cat.name;
 		activeCellKey = key;
-		modalStage = 'question';
+
+		if (dailyDoubleKeys.has(key)) {
+			modalStage = 'daily_double';
+			play('/sounds/jeopardy-daily-double-sound-effect-from-youtube_76mCCAq.mp3');
+		} else {
+			modalStage = 'question';
+			play('/sounds/jeopardy-ding.mp3');
+		}
 	}
 
 	function advance() {
 		if (!activeQuestion) return;
-		if (modalStage === 'question') {
+		if (modalStage === 'daily_double') {
+			modalStage = 'question';
+		} else if (modalStage === 'question') {
 			modalStage = 'answer';
 		} else {
 			cellStates[activeCellKey] = 'done';
@@ -100,21 +168,37 @@
 </div>
 
 {#if activeQuestion}
-	<button class="overlay" onclick={advance} aria-label={modalStage === 'question' ? 'Reveal answer' : 'Close'}>
-		<div class="modal" class:showing-answer={modalStage === 'answer'}>
-			<p class="modal-category">{activeCatName}</p>
-			<p class="modal-value">${activeQuestion.value}</p>
+	<button
+		class="overlay"
+		onclick={advance}
+		aria-label={modalStage === 'daily_double'
+			? 'See the clue'
+			: modalStage === 'question'
+				? 'Reveal answer'
+				: 'Close'}
+	>
+		{#if modalStage === 'daily_double'}
+			<div class="modal dd-modal">
+				<p class="dd-line">Daily</p>
+				<p class="dd-line dd-line-big">Double!</p>
+				<p class="modal-hint">click to see the clue</p>
+			</div>
+		{:else}
+			<div class="modal" class:showing-answer={modalStage === 'answer'}>
+				<p class="modal-category">{activeCatName}</p>
+				<p class="modal-value">${activeQuestion.value}</p>
 
-			{#if modalStage === 'question'}
-				<p class="modal-clue">{activeQuestion.question}</p>
-				<p class="modal-hint">click to reveal answer</p>
-			{:else}
-				<p class="modal-clue">{activeQuestion.question}</p>
-				<hr class="divider" />
-				<p class="modal-answer">{activeQuestion.answer}</p>
-				<p class="modal-hint">click to close</p>
-			{/if}
-		</div>
+				{#if modalStage === 'question'}
+					<p class="modal-clue">{activeQuestion.question}</p>
+					<p class="modal-hint">click to reveal answer</p>
+				{:else}
+					<p class="modal-clue">{activeQuestion.question}</p>
+					<hr class="divider" />
+					<p class="modal-answer">{activeQuestion.answer}</p>
+					<p class="modal-hint">click to close</p>
+				{/if}
+			</div>
+		{/if}
 	</button>
 {/if}
 
@@ -283,4 +367,32 @@
 		margin-top: 0.75rem;
 		flex-shrink: 0;
 	}
+
+	/* Daily Double screen */
+	.dd-modal {
+		justify-content: center;
+		gap: 0;
+	}
+
+	.dd-line {
+		font-family: var(--font-clue);
+		color: var(--gold);
+		font-weight: 700;
+		font-style: italic;
+		text-transform: uppercase;
+		line-height: 0.88;
+		text-shadow:
+			4px 6px 0 #000,
+			0 0 60px rgba(255, 204, 0, 0.25);
+		letter-spacing: 2px;
+	}
+
+	.dd-line:first-child {
+		font-size: clamp(3rem, min(12vw, 18vh), 14rem);
+	}
+
+	.dd-line-big {
+		font-size: clamp(4rem, min(18vw, 26vh), 20rem);
+	}
+
 </style>

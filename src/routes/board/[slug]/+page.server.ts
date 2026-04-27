@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { supabase } from '$lib/server/supabase';
 import type { JeopardyBoard } from '$lib/types';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const { data, error: err } = await supabase
 		.from('boards')
 		.select('title, data')
@@ -15,6 +15,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	return {
-		board: data.data as JeopardyBoard
+		board: data.data as JeopardyBoard,
+		dailyDoubles: url.searchParams.get('dd') === '1'
 	};
 };
