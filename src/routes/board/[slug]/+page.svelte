@@ -185,7 +185,7 @@
 		font: inherit;
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 16, 0.93);
+		background: var(--blue);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -196,61 +196,69 @@
 
 	.modal {
 		text-align: center;
-		max-width: 1000px;
+		max-width: 1100px;
 		width: 100%;
 		pointer-events: none;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 	}
 
 	.modal-category {
-		font-size: clamp(0.9rem, 2vw, 1.4rem);
-		color: var(--gold);
+		font-size: clamp(0.85rem, 1.8vw, 1.3rem);
+		color: white;
 		text-transform: uppercase;
 		letter-spacing: 4px;
-		opacity: 0.85;
+		opacity: 0.7;
+		text-shadow: 1px 1px 3px #000;
 	}
 
 	.modal-value {
-		font-size: clamp(1.5rem, 3vw, 2.5rem);
+		font-size: clamp(1.2rem, 2.5vw, 2rem);
 		color: var(--gold);
 		font-weight: 700;
 		letter-spacing: 2px;
+		text-shadow: 2px 2px 0 #000;
+		margin-bottom: 1rem;
 	}
 
 	.modal-clue {
-		font-size: clamp(1.8rem, 4.5vw, 4.5rem);
-		line-height: 1.25;
+		font-size: clamp(2rem, 5vw, 5.5rem);
+		line-height: 1.2;
 		color: white;
 		text-transform: uppercase;
 		letter-spacing: 2px;
-		margin-top: 0.5rem;
+		text-shadow:
+			2px 3px 0 #000,
+			-1px -1px 0 rgba(0, 0, 0, 0.4);
+		font-weight: 700;
 	}
 
 	.divider {
-		width: 60%;
+		width: 50%;
 		border: none;
-		border-top: 3px solid var(--gold);
-		opacity: 0.5;
-		margin: 0.5rem 0;
+		border-top: 3px solid rgba(255, 255, 255, 0.35);
+		margin: 1.25rem 0 0.75rem;
 	}
 
 	.modal-answer {
-		font-size: clamp(1.8rem, 4.5vw, 4.5rem);
-		line-height: 1.25;
+		font-size: clamp(2rem, 5vw, 5.5rem);
+		line-height: 1.2;
 		color: var(--gold);
 		text-transform: uppercase;
 		letter-spacing: 2px;
-		font-style: italic;
+		text-shadow:
+			2px 3px 0 #000,
+			-1px -1px 0 rgba(0, 0, 0, 0.4);
+		font-weight: 700;
 	}
 
 	.modal-hint {
-		font-size: 0.75rem;
-		color: rgba(255, 255, 255, 0.3);
+		font-size: 0.7rem;
+		color: rgba(255, 255, 255, 0.25);
 		text-transform: uppercase;
 		letter-spacing: 3px;
-		margin-top: 1.5rem;
+		margin-top: 2rem;
 	}
 </style>

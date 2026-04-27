@@ -13,3 +13,6 @@ create policy "boards_select" on public.boards
 
 create policy "boards_insert" on public.boards
   for insert with check (true);
+
+create policy "boards_delete" on public.boards
+  for delete using (true);
