@@ -309,6 +309,16 @@
 		gap: 5px;
 		background: #000;
 		padding: 5px;
+		/* Keep the board clear of the iPad status bar when launched from the home screen */
+		padding-top: max(5px, env(safe-area-inset-top));
+	}
+
+	/* Stop iPad long-press from selecting text or popping a callout during holds */
+	.board,
+	.overlay {
+		-webkit-user-select: none;
+		user-select: none;
+		-webkit-touch-callout: none;
 	}
 
 	.cat-header {
