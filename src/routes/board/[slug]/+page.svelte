@@ -77,13 +77,11 @@
 	let activeCellKey = $state('');
 	let modalStage = $state<'daily_double' | 'question' | 'answer'>('question');
 
+	const HOLD_MS = 500;
+
 	function openCell(catIdx: number, value: number) {
 		const key = `${catIdx}-${value}`;
-		if (cellStates[key]) {
-			// Clicking a completed tile undoes it (for mis-clicks)
-			delete cellStates[key];
-			return;
-		}
+		if (cellStates[key]) return;
 
 		const cat = board.categories[catIdx];
 		const question = cat.questions.find((q) => q.value === value);
@@ -102,8 +100,31 @@
 		}
 	}
 
+	// --- Hold to choose a tile ---
+	let holdingCellKey = $state('');
+	let cellHoldTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function startCellHold(catIdx: number, value: number) {
+		const key = `${catIdx}-${value}`;
+		if (cellStates[key] || holdingCellKey) return;
+		holdingCellKey = key;
+		cellHoldTimer = setTimeout(() => {
+			holdingCellKey = '';
+			openCell(catIdx, value);
+		}, HOLD_MS);
+	}
+
+	function cancelCellHold() {
+		clearTimeout(cellHoldTimer);
+		holdingCellKey = '';
+	}
+
+	// Clicking a completed tile undoes it (for mis-clicks)
+	function resetCell(key: string) {
+		delete cellStates[key];
+	}
+
 	// --- Hold to reveal answer ---
-	const HOLD_MS = 500;
 	let holding = $state(false);
 	let holdTimer: ReturnType<typeof setTimeout> | undefined;
 	// The click that ends a successful hold shouldn't also close the modal
@@ -198,11 +219,25 @@
 					class:done={isDone}
 					role="button"
 					tabindex="0"
-					onclick={() => openCell(catIdx, value)}
-					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && openCell(catIdx, value)}
+					class:holding={holdingCellKey === key}
+					onclick={() => isDone && resetCell(key)}
+					onpointerdown={() => startCellHold(catIdx, value)}
+					onpointerup={cancelCellHold}
+					onpointerleave={cancelCellHold}
+					onpointercancel={cancelCellHold}
+					oncontextmenu={(e) => e.preventDefault()}
+					onkeydown={(e) => {
+						if (e.key !== 'Enter' && e.key !== ' ') return;
+						e.preventDefault();
+						if (e.repeat) return;
+						if (isDone) resetCell(key);
+						else startCellHold(catIdx, value);
+					}}
+					onkeyup={cancelCellHold}
 				>
 					{#if !isDone}
 						<span class="amount">${value}</span>
+						<div class="hold-fill cell-hold-fill" style:animation-duration="{HOLD_MS}ms"></div>
 					{/if}
 				</div>
 			{:else}
@@ -292,6 +327,15 @@
 		cursor: pointer;
 		transition: background 0.12s;
 		border: 2px solid #1a1aa0;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.cell .cell-hold-fill {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		height: 5px;
 	}
 
 	.cell:hover:not(.done):not(.empty) {
