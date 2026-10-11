@@ -238,6 +238,16 @@
 					{#if !isDone}
 						<span class="amount">${value}</span>
 						<div class="hold-fill cell-hold-fill" style:animation-duration="{HOLD_MS}ms"></div>
+						<button
+							class="eliminate"
+							tabindex="-1"
+							aria-label="Eliminate tile"
+							onpointerdown={(e) => e.stopPropagation()}
+							onclick={(e) => {
+								e.stopPropagation();
+								cellStates[key] = 'done';
+							}}>×</button
+						>
 					{/if}
 				</div>
 			{:else}
@@ -329,6 +339,23 @@
 		border: 2px solid #1a1aa0;
 		position: relative;
 		overflow: hidden;
+	}
+
+	.eliminate {
+		position: absolute;
+		top: 2px;
+		right: 4px;
+		padding: 0 2px;
+		background: none;
+		border: none;
+		font-size: 0.8rem;
+		line-height: 1;
+		color: rgba(255, 255, 255, 0.12);
+		cursor: pointer;
+	}
+
+	.eliminate:hover {
+		color: rgba(255, 255, 255, 0.5);
 	}
 
 	.cell .cell-hold-fill {
