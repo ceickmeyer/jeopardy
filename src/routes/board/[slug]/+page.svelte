@@ -79,7 +79,11 @@
 
 	function openCell(catIdx: number, value: number) {
 		const key = `${catIdx}-${value}`;
-		if (cellStates[key]) return;
+		if (cellStates[key]) {
+			// Clicking a completed tile undoes it (for mis-clicks)
+			delete cellStates[key];
+			return;
+		}
 
 		const cat = board.categories[catIdx];
 		const question = cat.questions.find((q) => q.value === value);
@@ -98,6 +102,37 @@
 		}
 	}
 
+	// --- Hold to reveal answer ---
+	const HOLD_MS = 500;
+	let holding = $state(false);
+	let holdTimer: ReturnType<typeof setTimeout> | undefined;
+	// The click that ends a successful hold shouldn't also close the modal
+	let suppressClick = false;
+
+	function startHold() {
+		if (modalStage !== 'question' || holding) return;
+		holding = true;
+		holdTimer = setTimeout(() => {
+			holding = false;
+			suppressClick = true;
+			modalStage = 'answer';
+		}, HOLD_MS);
+	}
+
+	function cancelHold() {
+		clearTimeout(holdTimer);
+		holding = false;
+	}
+
+	function handleOverlayClick() {
+		if (suppressClick) {
+			suppressClick = false;
+			return;
+		}
+		if (modalStage === 'question') return;
+		advance();
+	}
+
 	function advance() {
 		if (!activeQuestion) return;
 		if (modalStage === 'daily_double') {
@@ -114,12 +149,23 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (!activeQuestion) return;
 		if (e.key === 'Escape') {
+			cancelHold();
 			cellStates[activeCellKey] = 'done';
 			activeQuestion = null;
 			activeCellKey = '';
 		} else if (e.key === ' ' || e.key === 'Enter') {
 			e.preventDefault();
-			advance();
+			if (e.repeat) return;
+			if (modalStage === 'question') startHold();
+			else advance();
+		}
+	}
+
+	function handleKeyup(e: KeyboardEvent) {
+		if (e.key === ' ' || e.key === 'Enter') {
+			e.preventDefault();
+			cancelHold();
+			suppressClick = false;
 		}
 	}
 </script>
@@ -128,7 +174,7 @@
 	<title>{board.title} – Jeopardy</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onkeyup={handleKeyup} />
 
 <div
 	class="board"
@@ -152,7 +198,6 @@
 					class:done={isDone}
 					role="button"
 					tabindex="0"
-					aria-disabled={isDone || undefined}
 					onclick={() => openCell(catIdx, value)}
 					onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && openCell(catIdx, value)}
 				>
@@ -170,11 +215,17 @@
 {#if activeQuestion}
 	<button
 		class="overlay"
-		onclick={advance}
+		class:holding
+		onclick={handleOverlayClick}
+		onpointerdown={startHold}
+		onpointerup={cancelHold}
+		onpointerleave={cancelHold}
+		onpointercancel={cancelHold}
+		oncontextmenu={(e) => e.preventDefault()}
 		aria-label={modalStage === 'daily_double'
 			? 'See the clue'
 			: modalStage === 'question'
-				? 'Reveal answer'
+				? 'Hold to reveal answer'
 				: 'Close'}
 	>
 		{#if modalStage === 'daily_double'}
@@ -190,7 +241,10 @@
 
 				{#if modalStage === 'question'}
 					<p class="modal-clue">{activeQuestion.question}</p>
-					<p class="modal-hint">click to reveal answer</p>
+					<div class="hold-track">
+						<div class="hold-fill" style:animation-duration="{HOLD_MS}ms"></div>
+					</div>
+					<p class="modal-hint">hold to reveal answer</p>
 				{:else}
 					<p class="modal-clue">{activeQuestion.question}</p>
 					<hr class="divider" />
@@ -247,8 +301,11 @@
 	.cell.done,
 	.cell.empty {
 		background: var(--blue-done);
-		cursor: default;
 		border-color: #06065a;
+	}
+
+	.cell.empty {
+		cursor: default;
 	}
 
 	.amount {
@@ -366,6 +423,33 @@
 		letter-spacing: 3px;
 		margin-top: 0.75rem;
 		flex-shrink: 0;
+	}
+
+	/* Hold-to-reveal progress */
+	.hold-track {
+		width: min(300px, 40%);
+		height: 4px;
+		margin-top: 1rem;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 2px;
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+
+	.hold-fill {
+		height: 100%;
+		width: 0;
+		background: var(--gold);
+	}
+
+	.holding .hold-fill {
+		animation: hold-fill linear forwards;
+	}
+
+	@keyframes hold-fill {
+		to {
+			width: 100%;
+		}
 	}
 
 	/* Daily Double screen */
