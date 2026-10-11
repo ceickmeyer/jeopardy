@@ -90,6 +90,7 @@
 		activeQuestion = question;
 		activeCatName = cat.name;
 		activeCellKey = key;
+		pressStartedOnOverlay = false;
 
 		if (dailyDoubleKeys.has(key)) {
 			modalStage = 'daily_double';
@@ -129,6 +130,14 @@
 	let holdTimer: ReturnType<typeof setTimeout> | undefined;
 	// The click that ends a successful hold shouldn't also close the modal
 	let suppressClick = false;
+	// The finger that held a tile open lifts on top of the overlay, and iPad turns
+	// that into a click. Only count clicks whose press began on the overlay.
+	let pressStartedOnOverlay = false;
+
+	function handleOverlayPointerDown() {
+		pressStartedOnOverlay = true;
+		startHold();
+	}
 
 	function startHold() {
 		if (modalStage !== 'question' || holding) return;
@@ -146,6 +155,8 @@
 	}
 
 	function handleOverlayClick() {
+		if (!pressStartedOnOverlay) return;
+		pressStartedOnOverlay = false;
 		if (suppressClick) {
 			suppressClick = false;
 			return;
@@ -262,7 +273,7 @@
 		class="overlay"
 		class:holding
 		onclick={handleOverlayClick}
-		onpointerdown={startHold}
+		onpointerdown={handleOverlayPointerDown}
 		onpointerup={cancelHold}
 		onpointerleave={cancelHold}
 		onpointercancel={cancelHold}
