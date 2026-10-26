@@ -72,6 +72,20 @@
 	// --- Game state ---
 	let cellStates = $state<Record<string, 'done'>>({});
 
+	// One verdict per tile, kept separately from cellStates so re-opening a tile
+	// never adds or removes points; judging it again just replaces the verdict.
+	type Verdict = 'right' | 'wrong';
+	let verdicts = $state<Record<string, Verdict>>({});
+
+	const score = $derived(
+		Object.entries(verdicts).reduce((total, [key, result]) => {
+			const value = Number(key.split('-')[1]);
+			if (result === 'right') return total + value;
+			if (result === 'wrong') return total - value;
+			return total;
+		}, 0)
+	);
+
 	let activeQuestion = $state<JeopardyQuestion | null>(null);
 	let activeCatName = $state('');
 	let activeCellKey = $state('');
@@ -125,44 +139,21 @@
 		delete cellStates[key];
 	}
 
-	// --- Hold to reveal answer ---
-	let holding = $state(false);
-	let holdTimer: ReturnType<typeof setTimeout> | undefined;
-	// The click that ends a successful hold shouldn't also close the modal
-	let suppressClick = false;
 	// The finger that held a tile open lifts on top of the overlay, and iPad turns
 	// that into a click. Only count clicks whose press began on the overlay.
 	let pressStartedOnOverlay = false;
 
-	function handleOverlayPointerDown() {
-		pressStartedOnOverlay = true;
-		startHold();
-	}
-
-	function startHold() {
-		if (modalStage !== 'question' || holding) return;
-		holding = true;
-		holdTimer = setTimeout(() => {
-			holding = false;
-			suppressClick = true;
-			modalStage = 'answer';
-		}, HOLD_MS);
-	}
-
-	function cancelHold() {
-		clearTimeout(holdTimer);
-		holding = false;
-	}
-
 	function handleOverlayClick() {
 		if (!pressStartedOnOverlay) return;
 		pressStartedOnOverlay = false;
-		if (suppressClick) {
-			suppressClick = false;
-			return;
-		}
-		if (modalStage === 'question') return;
 		advance();
+	}
+
+	function closeQuestion(verdict?: Verdict) {
+		cellStates[activeCellKey] = 'done';
+		if (verdict) verdicts[activeCellKey] = verdict;
+		activeQuestion = null;
+		activeCellKey = '';
 	}
 
 	function advance() {
@@ -172,33 +163,22 @@
 		} else if (modalStage === 'question') {
 			modalStage = 'answer';
 		} else {
-			cellStates[activeCellKey] = 'done';
-			activeQuestion = null;
-			activeCellKey = '';
+			closeQuestion();
 		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!activeQuestion) return;
 		if (e.key === 'Escape') {
-			cancelHold();
-			cellStates[activeCellKey] = 'done';
-			activeQuestion = null;
-			activeCellKey = '';
+			closeQuestion();
 		} else if (e.key === ' ' || e.key === 'Enter') {
 			e.preventDefault();
-			if (e.repeat) return;
-			if (modalStage === 'question') startHold();
-			else advance();
+			if (!e.repeat) advance();
 		}
 	}
 
 	function handleKeyup(e: KeyboardEvent) {
-		if (e.key === ' ' || e.key === 'Enter') {
-			e.preventDefault();
-			cancelHold();
-			suppressClick = false;
-		}
+		if (e.key === ' ' || e.key === 'Enter') e.preventDefault();
 	}
 </script>
 
@@ -207,6 +187,10 @@
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} onkeyup={handleKeyup} />
+
+<div class="score" class:negative={score < 0}>
+	{score < 0 ? '-' : ''}${Math.abs(score).toLocaleString()}
+</div>
 
 <div
 	class="board"
@@ -271,17 +255,13 @@
 {#if activeQuestion}
 	<button
 		class="overlay"
-		class:holding
 		onclick={handleOverlayClick}
-		onpointerdown={handleOverlayPointerDown}
-		onpointerup={cancelHold}
-		onpointerleave={cancelHold}
-		onpointercancel={cancelHold}
+		onpointerdown={() => (pressStartedOnOverlay = true)}
 		oncontextmenu={(e) => e.preventDefault()}
 		aria-label={modalStage === 'daily_double'
 			? 'See the clue'
 			: modalStage === 'question'
-				? 'Hold to reveal answer'
+				? 'Reveal answer'
 				: 'Close'}
 	>
 		{#if modalStage === 'daily_double'}
@@ -297,10 +277,7 @@
 
 				{#if modalStage === 'question'}
 					<p class="modal-clue">{activeQuestion.question}</p>
-					<div class="hold-track">
-						<div class="hold-fill" style:animation-duration="{HOLD_MS}ms"></div>
-					</div>
-					<p class="modal-hint">hold to reveal answer</p>
+					<p class="modal-hint">click to reveal answer</p>
 				{:else}
 					<p class="modal-clue">{activeQuestion.question}</p>
 					<hr class="divider" />
@@ -310,6 +287,17 @@
 			</div>
 		{/if}
 	</button>
+
+	{#if modalStage === 'answer'}
+		<div class="judge">
+			<button class="judge-btn right" aria-label="Correct" onclick={() => closeQuestion('right')}
+				>✓</button
+			>
+			<button class="judge-btn wrong" aria-label="Incorrect" onclick={() => closeQuestion('wrong')}
+				>✗</button
+			>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -427,12 +415,14 @@
 		z-index: 100;
 		cursor: pointer;
 		padding: 2rem;
+		/* Room for the right/wrong buttons */
+		padding-bottom: 5rem;
 	}
 
 	.modal {
 		text-align: center;
 		max-width: 1100px;
-		max-height: calc(100vh - 4rem);
+		max-height: calc(100vh - 7rem);
 		width: 100%;
 		overflow: hidden;
 		pointer-events: none;
@@ -517,17 +507,7 @@
 		flex-shrink: 0;
 	}
 
-	/* Hold-to-reveal progress */
-	.hold-track {
-		width: min(300px, 40%);
-		height: 4px;
-		margin-top: 1rem;
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 2px;
-		overflow: hidden;
-		flex-shrink: 0;
-	}
-
+	/* Hold-to-choose progress */
 	.hold-fill {
 		height: 100%;
 		width: 0;
@@ -542,6 +522,61 @@
 		to {
 			width: 100%;
 		}
+	}
+
+	/* Right / wrong buttons */
+	.judge {
+		position: fixed;
+		bottom: max(1.25rem, env(safe-area-inset-bottom));
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 1rem;
+		z-index: 101;
+	}
+
+	.judge-btn {
+		width: 2.75rem;
+		height: 2.75rem;
+		border-radius: 50%;
+		border: none;
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: white;
+		cursor: pointer;
+		opacity: 0.7;
+	}
+
+	.judge-btn:hover {
+		opacity: 1;
+	}
+
+	.judge-btn.right {
+		background: #1f9d4a;
+	}
+
+	.judge-btn.wrong {
+		background: #c8322d;
+	}
+
+	/* Score */
+	.score {
+		position: fixed;
+		top: max(8px, env(safe-area-inset-top));
+		right: 10px;
+		z-index: 50;
+		padding: 2px 8px;
+		border-radius: 4px;
+		background: rgba(0, 0, 0, 0.45);
+		font-family: var(--font-board);
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--gold);
+		pointer-events: none;
+	}
+
+	.score.negative {
+		color: #ff6b6b;
 	}
 
 	/* Daily Double screen */
