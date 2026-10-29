@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { JeopardyBoard, JeopardyQuestion } from '$lib/types';
+	import { renderMath } from '$lib/math';
+	import 'katex/dist/katex.min.css';
 
 	let { data }: { data: PageData } = $props();
 	const board = $derived(data.board);
@@ -276,12 +278,12 @@
 				<p class="modal-value">${activeQuestion.value}</p>
 
 				{#if modalStage === 'question'}
-					<p class="modal-clue">{activeQuestion.question}</p>
+					<p class="modal-clue">{@html renderMath(activeQuestion.question)}</p>
 					<p class="modal-hint">click to reveal answer</p>
 				{:else}
-					<p class="modal-clue">{activeQuestion.question}</p>
+					<p class="modal-clue">{@html renderMath(activeQuestion.question)}</p>
 					<hr class="divider" />
-					<p class="modal-answer">{activeQuestion.answer}</p>
+					<p class="modal-answer">{@html renderMath(activeQuestion.answer)}</p>
 					<p class="modal-hint">click to close</p>
 				{/if}
 			</div>
@@ -496,6 +498,19 @@
 			2px 3px 0 #000,
 			-1px -1px 0 rgba(0, 0, 0, 0.4);
 		font-weight: 700;
+	}
+
+	/* Math must keep its case (x vs X) and stays legible without the heavy shadow */
+	.modal-clue :global(.katex),
+	.modal-answer :global(.katex) {
+		text-transform: none;
+		letter-spacing: normal;
+		text-shadow: 2px 2px 0 #000;
+	}
+
+	.modal-clue :global(.katex-display),
+	.modal-answer :global(.katex-display) {
+		margin: 0.25em 0;
 	}
 
 	.modal-hint {

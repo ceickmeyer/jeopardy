@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.104.1",
-		"@sveltejs/adapter-vercel": "^6.3.3"
+		"@sveltejs/adapter-vercel": "^6.3.3",
+		"katex": "^0.19.1"
 	}
 }
